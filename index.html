@@ -21,6 +21,8 @@
     <canvas class="word-intro__canvas" aria-hidden="true"></canvas>
     <span class="word-intro__display"></span><span class="word-intro__cursor">|</span>
 
+    <button class="teaser-mute" id="js-mute" aria-label="Mute music">♫</button>
+
     <!-- End card: monogram + March 2026, fades in after "Coming Soon" -->
     <div id="js-endcard" class="teaser-endcard">
       <div class="logo-ring">
@@ -71,6 +73,22 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* Music toggle button */
+    .teaser-mute {
+      position: absolute;
+      top: 1.8rem;
+      right: 2rem;
+      z-index: 2;
+      background: none;
+      border: none;
+      color: rgba(243, 241, 238, 0.3);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0;
+      transition: color 200ms;
+    }
+    .teaser-mute:hover { color: rgba(243, 241, 238, 0.7); }
 
     /* "March 2026" credit text */
     .teaser-credit {
@@ -200,6 +218,132 @@
       }
 
       typeWord(0, 0);
+    }());
+  </script>
+
+  <script>
+    /* ── Tron / Matrix inspired generative soundtrack ────────────────────────
+       Layers: deep bass drone · detuned sawtooth pad · Am7 arpeggio · shimmer
+       All synthesised via Web Audio API — no audio files needed.
+       Starts automatically; falls back to first user interaction if
+       browser autoplay policy blocks it.
+    ──────────────────────────────────────────────────────────────────────── */
+    (function () {
+      'use strict';
+
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+
+      var actx, masterGain, delay;
+      var arpIdx = 0, arpTimer = null, arpStarted = false;
+      var isMuted = false;
+
+      // Am7 arpeggio: A2 C3 E3 G3 A3 G3 E3 C3 (dark, cinematic)
+      var ARP   = [110, 130.81, 164.81, 196.00, 220.00, 196.00, 164.81, 130.81];
+      var STEP  = 250; // 8th note at 120 BPM (ms)
+
+      function build() {
+        actx = new AC();
+
+        // Master
+        masterGain = actx.createGain();
+        masterGain.gain.value = 0.5;
+        masterGain.connect(actx.destination);
+
+        // Feedback delay — simulates reverb
+        delay = actx.createDelay(1.0);
+        delay.delayTime.value = 0.38;
+        var fb   = actx.createGain();   fb.gain.value = 0.42;
+        var fbLp = actx.createBiquadFilter();
+        fbLp.type = 'lowpass'; fbLp.frequency.value = 3000;
+        delay.connect(fbLp); fbLp.connect(fb); fb.connect(delay);
+        delay.connect(masterGain);
+
+        // Route helper: split a node to dry (master) + wet (delay)
+        function route(node, dry, wet) {
+          if (dry) { var d = actx.createGain(); d.gain.value = dry; node.connect(d); d.connect(masterGain); }
+          if (wet) { var w = actx.createGain(); w.gain.value = wet; node.connect(w); w.connect(delay); }
+        }
+
+        // ── Bass drone  A1 = 55 Hz, sine, tremolo LFO ──────────────────
+        var bass  = actx.createOscillator(); bass.type = 'sine'; bass.frequency.value = 55;
+        var bLFO  = actx.createOscillator(); bLFO.type = 'sine'; bLFO.frequency.value = 0.22;
+        var bAmt  = actx.createGain(); bAmt.gain.value = 0.09;
+        var bGain = actx.createGain(); bGain.gain.value = 0.28;
+        bLFO.connect(bAmt); bAmt.connect(bGain.gain); // LFO → tremolo
+        bass.connect(bGain); bGain.connect(masterGain);
+        bass.start(); bLFO.start();
+
+        // ── Pad  detuned sawtooth pairs at A2 + E3 + A3, lowpass swept ──
+        var pFilt = actx.createBiquadFilter();
+        pFilt.type = 'lowpass'; pFilt.frequency.value = 600; pFilt.Q.value = 2;
+
+        var fLFO = actx.createOscillator(); fLFO.type = 'sine'; fLFO.frequency.value = 0.04;
+        var fAmt = actx.createGain(); fAmt.gain.value = 450;  // sweep ±450 Hz
+        fLFO.connect(fAmt); fAmt.connect(pFilt.frequency); fLFO.start();
+
+        [[110, 110.5], [165, 165.4], [220, 220.7]].forEach(function (pair) {
+          pair.forEach(function (f) {
+            var o = actx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+            o.connect(pFilt); o.start();
+          });
+        });
+        var pGain = actx.createGain(); pGain.gain.value = 0.08;
+        pFilt.connect(pGain); route(pGain, 0.6, 0.4);
+
+        // ── High shimmer  A5 = 880 Hz, mostly wet ──────────────────────
+        var shim  = actx.createOscillator(); shim.type = 'sine'; shim.frequency.value = 880;
+        var sGain = actx.createGain(); sGain.gain.value = 0.01;
+        shim.connect(sGain); route(sGain, 0.05, 0.95);
+        shim.start();
+
+        // ── Arpeggio  Am7 pattern, square wave, 120 BPM 8th notes ──────
+        function tick() {
+          var f = ARP[arpIdx % ARP.length];
+          var o = actx.createOscillator(); o.type = 'square'; o.frequency.value = f;
+          var g = actx.createGain();
+          g.gain.setValueAtTime(0, actx.currentTime);
+          g.gain.linearRampToValueAtTime(0.08, actx.currentTime + 0.012);
+          g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + STEP / 1000 * 0.8);
+          o.connect(g); route(g, 0.4, 0.6);
+          o.start(); o.stop(actx.currentTime + STEP / 1000);
+          arpIdx++;
+          arpTimer = setTimeout(tick, STEP);
+        }
+
+        function startArp() {
+          if (actx.state === 'running' && !arpStarted) {
+            arpStarted = true;
+            setTimeout(tick, 600);
+          }
+        }
+        actx.onstatechange = startArp;
+        startArp();
+      }
+
+      // ── Boot ────────────────────────────────────────────────────────────
+      build();
+
+      // Try immediate resume (works when page was reached via a click/link)
+      actx.resume().catch(function () {});
+
+      // Fallback: resume on first interaction
+      ['click', 'touchstart', 'keydown'].forEach(function (evt) {
+        document.addEventListener(evt, function () { actx.resume(); }, { once: true });
+      });
+
+      // ── Mute toggle ─────────────────────────────────────────────────────
+      var muteBtn = document.getElementById('js-mute');
+      if (muteBtn) {
+        muteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          actx.resume(); // ensure running after interaction
+          isMuted = !isMuted;
+          masterGain.gain.setTargetAtTime(isMuted ? 0 : 0.5, actx.currentTime, 0.2);
+          muteBtn.textContent = isMuted ? '♪' : '♫';
+          muteBtn.setAttribute('aria-label', isMuted ? 'Unmute music' : 'Mute music');
+        });
+      }
     }());
   </script>
 
