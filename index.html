@@ -21,6 +21,8 @@
     <canvas class="word-intro__canvas" aria-hidden="true"></canvas>
     <span class="word-intro__display"></span><span class="word-intro__cursor">|</span>
 
+    <button id="js-rec" class="teaser-rec" aria-label="Record audio">⏺ Record</button>
+
     <div class="teaser-audio-bar">
       <button class="teaser-mute" id="js-mute" aria-label="Mute music">♫</button>
       <div class="teaser-audio-label">
@@ -80,6 +82,28 @@
       opacity: 1;
       pointer-events: auto;
     }
+
+    /* Record button — bottom-right corner */
+    .teaser-rec {
+      position: absolute;
+      bottom: 1.8rem;
+      right: 2rem;
+      z-index: 2;
+      background: none;
+      border: 1px solid rgba(243, 241, 238, 0.2);
+      color: rgba(243, 241, 238, 0.35);
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: 0.65rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      border-radius: 2px;
+      transition: color 200ms, border-color 200ms;
+    }
+    .teaser-rec:hover { color: rgba(243, 241, 238, 0.7); border-color: rgba(243, 241, 238, 0.45); }
+    .teaser-rec.is-recording { color: #ff5555; border-color: #ff5555; }
 
     /* Audio bar — fixed top-right, stacks mute button + track info */
     .teaser-audio-bar {
@@ -384,6 +408,37 @@
           masterGain.gain.setTargetAtTime(isMuted ? 0 : 0.5, actx.currentTime, 0.2);
           muteBtn.textContent = isMuted ? '♪' : '♫';
           muteBtn.setAttribute('aria-label', isMuted ? 'Unmute music' : 'Mute music');
+        });
+      }
+
+      // ── Record to file ───────────────────────────────────────────────────
+      var dest    = actx.createMediaStreamDestination();
+      masterGain.connect(dest);
+      var mediaRec, chunks = [];
+      var recBtn = document.getElementById('js-rec');
+      if (recBtn) {
+        recBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          actx.resume();
+          if (!mediaRec || mediaRec.state === 'inactive') {
+            chunks = [];
+            mediaRec = new MediaRecorder(dest.stream);
+            mediaRec.ondataavailable = function (ev) { if (ev.data.size > 0) chunks.push(ev.data); };
+            mediaRec.onstop = function () {
+              var blob = new Blob(chunks, { type: 'audio/webm' });
+              var url  = URL.createObjectURL(blob);
+              var a    = document.createElement('a');
+              a.href = url; a.download = 'cascade.webm'; a.click();
+              URL.revokeObjectURL(url);
+            };
+            mediaRec.start();
+            recBtn.textContent = '⏹ Stop & Save';
+            recBtn.classList.add('is-recording');
+          } else {
+            mediaRec.stop();
+            recBtn.textContent = '⏺ Record';
+            recBtn.classList.remove('is-recording');
+          }
         });
       }
     }());
