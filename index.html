@@ -269,6 +269,15 @@
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.font = FONT_SIZE + 'px monospace';
 
+        // Slow sine wave oscillates between green (t=0) and red (t=1)
+        var t      = (Math.sin(Date.now() / 4000) + 1) / 2;
+        var rMain  = Math.floor(t * 220);
+        var gMain  = Math.floor((1 - t) * 255);
+        var rLight = Math.floor(t * 255 + (1 - t) * 204);
+        var gLight = Math.floor((1 - t) * 255 + t * 204);
+        var mainColor  = 'rgb(' + rMain  + ',' + gMain  + ',40)';
+        var lightColor = 'rgb(' + rLight + ',' + gLight + ',204)';
+
         for (var i = 0; i < drops.length; i++) {
           // 8% chance to inject a letter from the name with a random glow
           var isName = Math.random() < 0.08;
@@ -277,12 +286,12 @@
             : CHARS[Math.floor(Math.random() * CHARS.length)];
 
           if (isName) {
-            ctx.shadowColor = '#00ff41';
+            ctx.shadowColor = mainColor;
             ctx.shadowBlur  = 10 + Math.random() * 25;
-            ctx.fillStyle   = Math.random() < 0.4 ? '#ffffff' : '#ccffcc';
+            ctx.fillStyle   = Math.random() < 0.4 ? '#ffffff' : lightColor;
           } else {
             ctx.shadowBlur = 0;
-            ctx.fillStyle  = drops[i] === 1 ? '#ccffcc' : '#00ff41';
+            ctx.fillStyle  = drops[i] === 1 ? lightColor : mainColor;
           }
 
           ctx.fillText(char, i * FONT_SIZE, drops[i] * FONT_SIZE);
