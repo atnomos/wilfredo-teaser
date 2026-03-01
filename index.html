@@ -41,6 +41,12 @@
           <img src="assets/monogram-logo.png" alt="Wilfredo Valle" class="logo-static" id="js-mi" />
         </a>
       </div>
+      <nav class="teaser-socials" aria-label="Social profiles">
+        <a href="https://x.com/atnomos" target="_blank" rel="noopener noreferrer" aria-label="X">𝕏 @atnomos</a>
+        <span>·</span>
+        <a href="https://www.linkedin.com/in/wilfredo-tpm/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">in wilfredo-tpm</a>
+      </nav>
+
       <div class="teaser-countdown" id="js-countdown">
         <span class="teaser-countdown__label">Launching</span>
         <div class="teaser-countdown__units">
@@ -194,6 +200,24 @@
       color: rgba(243, 241, 238, 0.22);
       letter-spacing: 0.05em;
     }
+
+    /* Social handles */
+    .teaser-socials {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(0.55rem, 1.2vw, 0.7rem);
+      font-weight: 300;
+      letter-spacing: 0.08em;
+      color: rgba(243, 241, 238, 0.28);
+    }
+    .teaser-socials a {
+      color: rgba(243, 241, 238, 0.38);
+      text-decoration: none;
+      transition: color 200ms;
+    }
+    .teaser-socials a:hover { color: rgba(243, 241, 238, 0.75); }
 
     /* "March 2026" credit text */
     .teaser-credit {
