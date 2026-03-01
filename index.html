@@ -21,6 +21,11 @@
     <canvas class="word-intro__canvas" aria-hidden="true"></canvas>
     <span class="word-intro__display"></span><span class="word-intro__cursor">|</span>
 
+    <nav class="teaser-socials" aria-label="Social profiles">
+      <a href="https://x.com/atnomos" target="_blank" rel="noopener noreferrer" aria-label="X">𝕏</a>
+      <a href="https://www.linkedin.com/in/wilfredo-tpm/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">in</a>
+    </nav>
+
     <div class="teaser-audio-bar">
       <button class="teaser-mute" id="js-mute" aria-label="Mute music">♫</button>
       <div class="teaser-audio-label">
@@ -41,12 +46,6 @@
           <img src="assets/monogram-logo.png" alt="Wilfredo Valle" class="logo-static" id="js-mi" />
         </a>
       </div>
-      <nav class="teaser-socials" aria-label="Social profiles">
-        <a href="https://x.com/atnomos" target="_blank" rel="noopener noreferrer" aria-label="X">𝕏 @atnomos</a>
-        <span>·</span>
-        <a href="https://www.linkedin.com/in/wilfredo-tpm/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">in wilfredo-tpm</a>
-      </nav>
-
       <div class="teaser-countdown" id="js-countdown">
         <span class="teaser-countdown__label">Launching</span>
         <div class="teaser-countdown__units">
@@ -201,19 +200,21 @@
       letter-spacing: 0.05em;
     }
 
-    /* Social handles */
+    /* Social icons — top-left */
     .teaser-socials {
+      position: absolute;
+      top: 1.6rem;
+      left: 2rem;
+      z-index: 2;
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 1rem;
       font-family: var(--f-ui, 'DM Sans', sans-serif);
-      font-size: clamp(0.55rem, 1.2vw, 0.7rem);
+      font-size: 0.85rem;
       font-weight: 300;
-      letter-spacing: 0.08em;
-      color: rgba(243, 241, 238, 0.28);
     }
     .teaser-socials a {
-      color: rgba(243, 241, 238, 0.38);
+      color: rgba(243, 241, 238, 0.3);
       text-decoration: none;
       transition: color 200ms;
     }
