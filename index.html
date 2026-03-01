@@ -21,7 +21,18 @@
     <canvas class="word-intro__canvas" aria-hidden="true"></canvas>
     <span class="word-intro__display"></span><span class="word-intro__cursor">|</span>
 
-    <button id="js-rec" class="teaser-rec" aria-label="Record audio">⏺ Record</button>
+    <div class="teaser-countdown" id="js-countdown">
+      <span class="teaser-countdown__label">Launching</span>
+      <div class="teaser-countdown__units">
+        <div class="teaser-countdown__unit"><span id="js-cd-d">00</span><span>Days</span></div>
+        <div class="teaser-countdown__sep">:</div>
+        <div class="teaser-countdown__unit"><span id="js-cd-h">00</span><span>Hrs</span></div>
+        <div class="teaser-countdown__sep">:</div>
+        <div class="teaser-countdown__unit"><span id="js-cd-m">00</span><span>Min</span></div>
+        <div class="teaser-countdown__sep">:</div>
+        <div class="teaser-countdown__unit"><span id="js-cd-s">00</span><span>Sec</span></div>
+      </div>
+    </div>
 
     <div class="teaser-audio-bar">
       <button class="teaser-mute" id="js-mute" aria-label="Mute music">♫</button>
@@ -83,27 +94,60 @@
       pointer-events: auto;
     }
 
-    /* Record button — bottom-right corner (temporary) */
-    .teaser-rec {
+    /* Countdown — bottom-left */
+    .teaser-countdown {
       position: absolute;
       bottom: 1.8rem;
-      right: 2rem;
+      left: 2rem;
       z-index: 2;
-      background: none;
-      border: 1px solid rgba(243, 241, 238, 0.2);
-      color: rgba(243, 241, 238, 0.35);
-      font-family: var(--f-ui, 'DM Sans', sans-serif);
-      font-size: 0.65rem;
-      font-weight: 300;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      padding: 0.4rem 0.8rem;
-      border-radius: 2px;
-      transition: color 200ms, border-color 200ms;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
     }
-    .teaser-rec:hover { color: rgba(243, 241, 238, 0.7); border-color: rgba(243, 241, 238, 0.45); }
-    .teaser-rec.is-recording { color: #ff5555; border-color: #ff5555; }
+    .teaser-countdown__label {
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(0.45rem, 0.9vw, 0.55rem);
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(243, 241, 238, 0.22);
+    }
+    .teaser-countdown__units {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+    .teaser-countdown__unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+    }
+    .teaser-countdown__unit span:first-child {
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      font-weight: 200;
+      letter-spacing: 0.04em;
+      color: rgba(243, 241, 238, 0.55);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .teaser-countdown__unit span:last-child {
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(0.38rem, 0.7vw, 0.48rem);
+      font-weight: 300;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(243, 241, 238, 0.2);
+    }
+    .teaser-countdown__sep {
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(0.8rem, 2vw, 1.2rem);
+      font-weight: 200;
+      color: rgba(243, 241, 238, 0.18);
+      padding-top: 0.05rem;
+      line-height: 1;
+    }
 
     /* Audio bar — fixed top-right, stacks mute button + track info */
     .teaser-audio-bar {
@@ -420,36 +464,57 @@
         });
       }
 
-      // ── Record to file (temporary) ───────────────────────────────────────
+      // ── Auto-record: starts with audio, saves automatically at 2:00 ────
       var dest = actx.createMediaStreamDestination();
       masterGain.connect(dest);
-      var mediaRec, chunks = [];
-      var recBtn = document.getElementById('js-rec');
-      if (recBtn) {
-        recBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          actx.resume();
-          if (!mediaRec || mediaRec.state === 'inactive') {
-            chunks = [];
-            mediaRec = new MediaRecorder(dest.stream);
-            mediaRec.ondataavailable = function (ev) { if (ev.data.size > 0) chunks.push(ev.data); };
-            mediaRec.onstop = function () {
-              var blob = new Blob(chunks, { type: 'audio/webm' });
-              var url  = URL.createObjectURL(blob);
-              var a    = document.createElement('a');
-              a.href = url; a.download = 'cascade.webm'; a.click();
-              URL.revokeObjectURL(url);
-            };
-            mediaRec.start();
-            recBtn.textContent = '⏹ Stop & Save';
-            recBtn.classList.add('is-recording');
-          } else {
-            mediaRec.stop();
-            recBtn.textContent = '⏺ Record';
-            recBtn.classList.remove('is-recording');
-          }
-        });
+      var mediaRec, recChunks = [], recStarted = false;
+
+      function beginRec() {
+        if (actx.state !== 'running' || recStarted) return;
+        recStarted = true;
+        recChunks = [];
+        mediaRec = new MediaRecorder(dest.stream);
+        mediaRec.ondataavailable = function (ev) { if (ev.data.size > 0) recChunks.push(ev.data); };
+        mediaRec.onstop = function () {
+          var blob = new Blob(recChunks, { type: 'audio/webm' });
+          var url  = URL.createObjectURL(blob);
+          var a    = document.createElement('a');
+          a.href = url; a.download = 'cascade.webm'; a.click();
+          URL.revokeObjectURL(url);
+        };
+        mediaRec.start();
+        // auto-stop 1s after the fade completes at 2:00
+        setTimeout(function () {
+          if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
+        }, 121000);
       }
+
+      // chain with existing onstatechange (startArp)
+      var _prevSC = actx.onstatechange;
+      actx.onstatechange = function () { if (_prevSC) _prevSC(); beginRec(); };
+      beginRec(); // try immediately if context already running
+    }());
+  </script>
+
+  <script>
+    /* ── Countdown to March 31 2026 ─────────────────────────────────────── */
+    (function () {
+      var target = new Date(2026, 2, 31).getTime(); // March 31, 2026 midnight local
+      var dEl = document.getElementById('js-cd-d');
+      var hEl = document.getElementById('js-cd-h');
+      var mEl = document.getElementById('js-cd-m');
+      var sEl = document.getElementById('js-cd-s');
+      function pad(n) { return n < 10 ? '0' + n : '' + n; }
+      function tick() {
+        var diff = target - Date.now();
+        if (diff <= 0) { dEl.textContent = hEl.textContent = mEl.textContent = sEl.textContent = '00'; return; }
+        dEl.textContent = pad(Math.floor(diff / 86400000));
+        hEl.textContent = pad(Math.floor((diff % 86400000) / 3600000));
+        mEl.textContent = pad(Math.floor((diff % 3600000) / 60000));
+        sEl.textContent = pad(Math.floor((diff % 60000) / 1000));
+      }
+      tick();
+      setInterval(tick, 1000);
     }());
   </script>
 
