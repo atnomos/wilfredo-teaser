@@ -464,35 +464,6 @@
         });
       }
 
-      // ── Auto-record: starts with audio, saves automatically at 2:00 ────
-      var dest = actx.createMediaStreamDestination();
-      masterGain.connect(dest);
-      var mediaRec, recChunks = [], recStarted = false;
-
-      function beginRec() {
-        if (actx.state !== 'running' || recStarted) return;
-        recStarted = true;
-        recChunks = [];
-        mediaRec = new MediaRecorder(dest.stream);
-        mediaRec.ondataavailable = function (ev) { if (ev.data.size > 0) recChunks.push(ev.data); };
-        mediaRec.onstop = function () {
-          var blob = new Blob(recChunks, { type: 'audio/webm' });
-          var url  = URL.createObjectURL(blob);
-          var a    = document.createElement('a');
-          a.href = url; a.download = 'cascade.webm'; a.click();
-          URL.revokeObjectURL(url);
-        };
-        mediaRec.start();
-        // auto-stop 1s after the fade completes at 2:00
-        setTimeout(function () {
-          if (mediaRec && mediaRec.state === 'recording') mediaRec.stop();
-        }, 121000);
-      }
-
-      // chain with existing onstatechange (startArp)
-      var _prevSC = actx.onstatechange;
-      actx.onstatechange = function () { if (_prevSC) _prevSC(); beginRec(); };
-      beginRec(); // try immediately if context already running
     }());
   </script>
 
