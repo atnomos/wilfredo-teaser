@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>OG Image Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@300&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; gap: 1.5rem; font-family: sans-serif; }
+    canvas { border: 1px solid #333; max-width: 100%; }
+    button { padding: 0.6rem 1.4rem; background: #00ff41; color: #000; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; letter-spacing: 0.1em; }
+    button:hover { background: #00cc33; }
+    p { color: #666; font-size: 0.8rem; margin: 0; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="1200" height="630"></canvas>
+  <button id="dl">Download og-image.png</button>
+  <p>Save to assets/ then push to GitHub</p>
+
+  <script>
+    var canvas = document.getElementById('c');
+    var ctx    = canvas.getContext('2d');
+
+    var img = new Image();
+    img.src = 'assets/monogram-logo.png';
+    img.onload = draw;
+    img.onerror = function () { draw(); }; // draw without logo if missing
+
+    function draw() {
+      var W = 1200, H = 630;
+
+      // ── Black background ──────────────────────────────────────────────
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, W, H);
+
+      // ── Matrix scanlines ──────────────────────────────────────────────
+      for (var y = 0; y < H; y += 3) {
+        ctx.fillStyle = 'rgba(0, 255, 65, 0.018)';
+        ctx.fillRect(0, y, W, 1);
+      }
+
+      // ── Vertical green glow columns (sparse rain echo) ────────────────
+      ctx.save();
+      for (var x = 0; x < W; x += 40) {
+        var alpha = 0.02 + Math.random() * 0.04;
+        var grad = ctx.createLinearGradient(x, 0, x, H);
+        grad.addColorStop(0, 'rgba(0,255,65,0)');
+        grad.addColorStop(0.3 + Math.random() * 0.4, 'rgba(0,255,65,' + alpha + ')');
+        grad.addColorStop(1, 'rgba(0,255,65,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, 0, 18, H);
+      }
+      ctx.restore();
+
+      // ── Monogram logo — centered, green tinted ────────────────────────
+      var logoSize = 200;
+      var lx = (W - logoSize) / 2;
+      var ly = (H - logoSize) / 2 - 55;
+
+      if (img.complete && img.naturalWidth > 0) {
+        // Render logo into offscreen canvas
+        var off = document.createElement('canvas');
+        off.width = logoSize; off.height = logoSize;
+        var octx = off.getContext('2d');
+        octx.drawImage(img, 0, 0, logoSize, logoSize);
+        // source-atop: tint draws ON TOP of photo pixels only, transparent outside
+        octx.globalCompositeOperation = 'source-atop';
+        octx.fillStyle = 'rgba(0, 200, 60, 0.45)';
+        octx.fillRect(0, 0, logoSize, logoSize);
+        // Draw tinted logo onto main canvas normally
+        ctx.drawImage(off, lx, ly);
+      }
+
+      // ── Name ──────────────────────────────────────────────────────────
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#00ff41';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#00ff41';
+      ctx.font = '700 56px Syne, sans-serif';
+      ctx.fillText('WILFREDO VALLE', W / 2, ly + logoSize + 62);
+
+      // ── URL / subtitle ────────────────────────────────────────────────
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = 'rgba(0, 255, 65, 0.45)';
+      ctx.font = '300 18px "DM Sans", sans-serif';
+      ctx.fillText('WILFREDOVALLE.AI  ·  COMING SOON  ·  MARCH 2026', W / 2, ly + logoSize + 100);
+
+      ctx.shadowBlur = 0;
+    }
+
+    document.getElementById('dl').addEventListener('click', function () {
+      var a = document.createElement('a');
+      a.download = 'og-image.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    });
+  </script>
+</body>
+</html>
