@@ -25,7 +25,8 @@
       <button class="teaser-mute" id="js-mute" aria-label="Mute music">♫</button>
       <div class="teaser-audio-label">
         <span>Cascade</span>
-        <span>© 2026 Wilfredo Valle · wilfredovalle.ai</span>
+        <span>by wilfredo-ai</span>
+        <span>© 2026 wilfredovalle.ai</span>
       </div>
     </div>
 
@@ -116,14 +117,19 @@
       text-transform: uppercase;
       line-height: 1.2;
     }
-    .teaser-audio-label span:first-child {
+    .teaser-audio-label span:nth-child(1) {
       font-size: clamp(0.55rem, 1.2vw, 0.7rem);
       color: rgba(243, 241, 238, 0.55);
     }
-    .teaser-audio-label span:last-child {
-      font-size: clamp(0.45rem, 1vw, 0.58rem);
-      color: rgba(243, 241, 238, 0.28);
+    .teaser-audio-label span:nth-child(2) {
+      font-size: clamp(0.48rem, 1vw, 0.6rem);
+      color: rgba(243, 241, 238, 0.35);
       letter-spacing: 0.06em;
+    }
+    .teaser-audio-label span:nth-child(3) {
+      font-size: clamp(0.42rem, 0.9vw, 0.52rem);
+      color: rgba(243, 241, 238, 0.22);
+      letter-spacing: 0.05em;
     }
 
     /* "March 2026" credit text */
