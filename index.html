@@ -341,7 +341,7 @@
       rainInterval = setInterval(drawRain, 33); // ~30 fps
 
       // --- Typewriter ---
-      var WORDS     = ['Creative Direction', 'Design Thinker', 'Technologist', 'Program Manager', 'AI Optimist', 'Coming Soon'];
+      var WORDS     = ['By design.', 'With intent.', 'With AI.', 'Without permission.', 'Coming Soon'];
       var HOLD      = 950;
       var CLEAR_GAP = 180;
       var timer;
@@ -355,7 +355,8 @@
         return base + jitter + hesitate;
       }
 
-      // Delete current display text one char at a time, then call callback
+
+      // Delete display text one char at a time, then call callback
       function deleteChars(callback) {
         var current = display.textContent;
         if (current.length === 0) { callback(); return; }
@@ -363,7 +364,7 @@
         timer = setTimeout(function () { deleteChars(callback); }, 55 + Math.random() * 35);
       }
 
-      // Type a decoy word then call callback
+      // Type a decoy string then call callback
       function typeDecoy(decoy, charIdx, callback) {
         display.textContent = decoy.slice(0, charIdx);
         if (charIdx < decoy.length) {
@@ -394,14 +395,14 @@
       function typeWord(wordIdx, charIdx, skipDecoy) {
         var word = WORDS[wordIdx];
 
-        // "Program Manager": type "Project" first, erase, then type the real word
+        // "Without permission.": type "With" first, pause, erase, then type the real word
         if (wordIdx === 3 && charIdx === 0 && !skipDecoy) {
-          typeDecoy('Project', 0, function () {
+          typeDecoy('With', 0, function () {
             timer = setTimeout(function () {
               deleteChars(function () {
                 timer = setTimeout(function () { typeWord(wordIdx, 0, true); }, CLEAR_GAP);
               });
-            }, 650);
+            }, 550);
           });
           return;
         }
