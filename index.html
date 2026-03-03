@@ -53,10 +53,8 @@
       <div class="logo-ring">
         <a class="monogram monogram--landing" href="https://wilfredovalle.ai" aria-label="Wilfredo Valle">
           <video muted playsinline id="js-mv">
-            <source src="assets/animate-logo.webm" type="video/webm" />
-            <source src="assets/animate-logov2.m4v" type="video/mp4" />
+            <source src="assets/animate-logov3.m4v" type="video/mp4" />
           </video>
-          <img src="assets/monogram-logo.png" alt="Wilfredo Valle" class="logo-static" id="js-mi" />
         </a>
       </div>
       <div class="teaser-countdown" id="js-countdown">
@@ -340,15 +338,10 @@
           setTimeout(function () {
             var endcard = document.getElementById('js-endcard');
             var mv = document.getElementById('js-mv');
-            var mi = document.getElementById('js-mi');
             endcard.classList.add('is-visible');
             if (mv) {
               mv.currentTime = 0;
               mv.play();
-              mv.addEventListener('ended', function () {
-                mv.style.opacity = '0';
-                if (mi) { mi.style.opacity = '1'; }
-              }, { once: true });
             }
           }, 2200); // slightly past the 2000ms fade-out
         }, 1000);
