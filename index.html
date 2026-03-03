@@ -72,6 +72,7 @@
           <div class="teaser-countdown__unit"><span id="js-cd-s">00</span><span>Sec</span></div>
         </div>
       </div>
+      <button class="teaser-replay" id="js-replay">&#8635; Replay</button>
     </div>
   </div>
 
@@ -257,6 +258,33 @@
     }
     .teaser-socials a:hover { color: rgba(243, 241, 238, 0.75); }
 
+    /* Dissolve-out transition between phrases */
+    .word-intro__display.is-dissolving {
+      transition: opacity 900ms ease-out, filter 900ms ease-out,
+                  transform 900ms ease-out, color 500ms ease-in,
+                  text-shadow 500ms ease-in;
+      opacity: 0;
+      filter: blur(18px);
+      transform: scale(0.35);
+      /* color + text-shadow injected dynamically to match rain at that moment */
+    }
+
+    /* Replay button */
+    .teaser-replay {
+      background: none;
+      border: none;
+      font-family: var(--f-ui, 'DM Sans', sans-serif);
+      font-size: clamp(0.52rem, 1vw, 0.65rem);
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(243, 241, 238, 0.2);
+      cursor: pointer;
+      padding: 0;
+      transition: color 250ms;
+    }
+    .teaser-replay:hover { color: rgba(243, 241, 238, 0.55); }
+
     /* "March 2026" credit text */
     .teaser-credit {
       display: block;
@@ -420,13 +448,65 @@
         } else {
           var periodPause = word[word.length - 1] === '.' ? 350 : 0;
           timer = setTimeout(function () {
-            display.textContent = '';
-            timer = setTimeout(function () { typeWord(wordIdx + 1, 0); }, CLEAR_GAP);
+            // Sample rain color at this exact moment using the same sine formula
+            var t = (Math.sin(Date.now() / 4000) + 1) / 2;
+            var r = Math.floor(t * 220);
+            var g = Math.floor((1 - t) * 255);
+            var rainColor = 'rgb(' + r + ',' + g + ',40)';
+            display.classList.add('is-dissolving');
+            // Set color on next frame so the transition fires from current → rainColor
+            requestAnimationFrame(function () {
+              display.style.color = rainColor;
+              display.style.textShadow =
+                '0 0 12px ' + rainColor + ', ' +
+                '0 0 30px ' + rainColor + ', ' +
+                '0 0 60px ' + rainColor;
+            });
+            timer = setTimeout(function () {
+              display.textContent = '';
+              display.classList.remove('is-dissolving');
+              // Snap back to full visibility so next word types in cleanly
+              display.style.transition = 'none';
+              display.style.opacity = '1';
+              display.style.filter = '';
+              display.style.transform = '';
+              display.style.color = '';
+              display.style.textShadow = '';
+              // Re-enable CSS on next frame before typing begins
+              requestAnimationFrame(function () {
+                display.style.transition = '';
+                display.style.opacity = '';
+                display.style.filter = '';
+                display.style.transform = '';
+                display.style.color = '';
+                display.style.textShadow = '';
+              });
+              timer = setTimeout(function () { typeWord(wordIdx + 1, 0); }, CLEAR_GAP);
+            }, 930); // slightly longer than the 900ms transition
           }, HOLD + periodPause);
         }
       }
 
       typeWord(0, 0);
+
+      // Replay — resets all state and restarts from word 0
+      var replayBtn = document.getElementById('js-replay');
+      if (replayBtn) {
+        replayBtn.addEventListener('click', function () {
+          clearTimeout(timer);
+          var endcard = document.getElementById('js-endcard');
+          var mv = document.getElementById('js-mv');
+          endcard.classList.remove('is-visible');
+          if (mv) { mv.pause(); mv.currentTime = 0; }
+          display.textContent = '';
+          display.classList.remove('is-dissolving', 'is-farewell');
+          display.style.cssText = '';
+          cursor.style.display = '';
+          if (sub) { sub.textContent = ''; sub.classList.remove('is-visible'); }
+          // Small delay so endcard fade-out is visible before typing starts
+          setTimeout(function () { typeWord(0, 0); }, 600);
+        });
+      }
     }());
   </script>
 
