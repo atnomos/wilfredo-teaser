@@ -32,7 +32,10 @@
 
   <div id="js-intro" class="word-intro" aria-live="polite" aria-label="Teaser">
     <canvas class="word-intro__canvas" aria-hidden="true"></canvas>
-    <span class="word-intro__display"></span><span class="word-intro__cursor">|</span>
+    <div class="word-intro__stage">
+      <span id="js-sub" class="word-intro__sub"></span>
+      <div><span class="word-intro__display"></span><span class="word-intro__cursor">|</span></div>
+    </div>
 
     <nav class="teaser-socials" aria-label="Social profiles">
       <a href="https://x.com/atnomos" target="_blank" rel="noopener noreferrer" aria-label="X">𝕏</a>
@@ -79,6 +82,29 @@
       white-space: nowrap;
       font-size: clamp(1.6rem, 8vw, 8rem);
     }
+
+    /* Stage: stacks sub-label above display */
+    .word-intro__stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* "new website" grey label above Coming Soon */
+    .word-intro__sub {
+      font-family: 'DM Sans', sans-serif;
+      font-size: clamp(0.65rem, 1.4vw, 0.9rem);
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      opacity: 0;
+      transition: opacity 600ms ease;
+    }
+    .word-intro__sub.is-visible { opacity: 1; }
 
     /* Slow fade for "Coming Soon" — teaser page only */
     .word-intro__display.is-farewell {
@@ -316,25 +342,43 @@
 
       // --- Typewriter ---
       var WORDS     = ['Creative Direction', 'Design Thinker', 'Technologist', 'Program Manager', 'AI Optimist', 'Coming Soon'];
-      var HOLD      = 900;
-      var CLEAR_GAP = 220;
+      var HOLD      = 950;
+      var CLEAR_GAP = 180;
       var timer;
+      var sub = document.getElementById('js-sub');
 
-      // Randomised delay per character — mimics natural typing rhythm
+      // Natural character timing — slower, human-paced
       function charDelay(ch) {
-        var base = ch === ' ' ? 180 : 120;          // spaces feel like a beat
-        var jitter = Math.random() * 100;            // ±0–100ms natural variance
-        var hesitate = Math.random() < 0.12 ? 200 : 0; // occasional micro-pause
+        var base = ch === ' ' ? 200 : 130;
+        var jitter = Math.random() * 90;
+        var hesitate = Math.random() < 0.12 ? 200 : 0;
         return base + jitter + hesitate;
+      }
+
+      // Delete current display text one char at a time, then call callback
+      function deleteChars(callback) {
+        var current = display.textContent;
+        if (current.length === 0) { callback(); return; }
+        display.textContent = current.slice(0, -1);
+        timer = setTimeout(function () { deleteChars(callback); }, 55 + Math.random() * 35);
+      }
+
+      // Type a decoy word then call callback
+      function typeDecoy(decoy, charIdx, callback) {
+        display.textContent = decoy.slice(0, charIdx);
+        if (charIdx < decoy.length) {
+          timer = setTimeout(function () { typeDecoy(decoy, charIdx + 1, callback); }, charDelay(decoy[charIdx]));
+        } else {
+          callback();
+        }
       }
 
       function farewell() {
         clearTimeout(timer);
-        // Hold 1000ms → fade "Coming Soon" out (2000ms)
         setTimeout(function () {
           display.classList.add('is-farewell');
           cursor.style.display = 'none';
-          // After "Coming Soon" is gone → fade in endcard and play monogram video
+          if (sub) sub.classList.remove('is-visible'); // fade out "new website" with Coming Soon
           setTimeout(function () {
             var endcard = document.getElementById('js-endcard');
             var mv = document.getElementById('js-mv');
@@ -343,15 +387,34 @@
               mv.currentTime = 0;
               mv.play();
             }
-          }, 2200); // slightly past the 2000ms fade-out
+          }, 2200);
         }, 1000);
       }
 
-      function typeWord(wordIdx, charIdx) {
+      function typeWord(wordIdx, charIdx, skipDecoy) {
         var word = WORDS[wordIdx];
+
+        // "Program Manager": type "Project" first, erase, then type the real word
+        if (wordIdx === 3 && charIdx === 0 && !skipDecoy) {
+          typeDecoy('Project', 0, function () {
+            timer = setTimeout(function () {
+              deleteChars(function () {
+                timer = setTimeout(function () { typeWord(wordIdx, 0, true); }, CLEAR_GAP);
+              });
+            }, 650);
+          });
+          return;
+        }
+
+        // Reveal "new website" label when Coming Soon begins
+        if (wordIdx === WORDS.length - 1 && charIdx === 0 && sub) {
+          sub.textContent = 'new website';
+          sub.classList.add('is-visible');
+        }
+
         display.textContent = word.slice(0, charIdx);
         if (charIdx < word.length) {
-          timer = setTimeout(function () { typeWord(wordIdx, charIdx + 1); }, charDelay(word[charIdx]));
+          timer = setTimeout(function () { typeWord(wordIdx, charIdx + 1, skipDecoy); }, charDelay(word[charIdx]));
         } else if (wordIdx === WORDS.length - 1) {
           farewell();
         } else {
