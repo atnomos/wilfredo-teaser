@@ -668,5 +668,75 @@
     }());
   </script>
 
+  <script>
+    /* ── Ring glisten: tracks rain color (green ↔ red sine wave) ────────────
+       The matrix rain oscillates via Math.sin(Date.now() / 4000).
+       Once the endcard is visible we take over the ring's CSS animation and
+       re-draw the conic-gradient + glow each frame to match.
+    ──────────────────────────────────────────────────────────────────────── */
+    (function () {
+      var ring = document.querySelector('#js-endcard .logo-ring');
+      var endcard = document.getElementById('js-endcard');
+      if (!ring || !endcard) return;
+
+      function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+
+      // Conic-gradient color stops: [rGreen, gGreen, bGreen, rRed, gRed, bRed, 'Xdeg']
+      // Green values extracted from styles.css; red mirrors the hue shift
+      var STOPS = [
+        [  0,  21,  0,   21,  0,  0,  '0deg'  ],
+        [  0,  68, 34,   68,  0,  0,  '45deg' ],
+        [  0, 136, 51,  136,  0,  0,  '80deg' ],
+        [  0, 221, 85,  221,  0,  0, '105deg' ],
+        [170, 255, 204, 255, 170, 170, '118deg'],
+        [  0, 238, 68,  238,  0,  0, '135deg' ],
+        [  0, 119, 34,  119,  0,  0, '170deg' ],
+        [  0,  46, 17,   46,  0,  0, '215deg' ],
+        [  0,  85, 34,   85,  0,  0, '265deg' ],
+        [  0,  21,  0,   21,  0,  0, '360deg' ]
+      ];
+
+      var startTime = null;
+
+      function tick(ts) {
+        if (!startTime) startTime = ts;
+
+        // Same sine formula as the rain (period ~25s full cycle)
+        var t = (Math.sin(Date.now() / 4000) + 1) / 2;
+
+        // Rotation angle — matches the 5s ring-glisten CSS animation period
+        var angle = 125 + ((ts - startTime) / 5000) * 360;
+
+        var gradient = STOPS.map(function (s) {
+          var r = lerp(s[0], s[3], t);
+          var g = lerp(s[1], s[4], t);
+          var b = lerp(s[2], s[5], t);
+          return 'rgb(' + r + ',' + g + ',' + b + ') ' + s[6];
+        }).join(', ');
+
+        ring.style.background = 'conic-gradient(from ' + angle + 'deg, ' + gradient + ')';
+
+        var glowR = lerp(0, 200, t);
+        var glowG = lerp(200, 0, t);
+        ring.style.boxShadow =
+          '0 0 0 1px rgba(' + lerp(0, 255, t) + ',' + lerp(255, 0, t) + ',80,0.12),' +
+          '0 0 28px rgba(' + glowR + ',' + glowG + ',60,0.22),' +
+          '0 4px 20px rgba(0,0,0,0.55)';
+
+        requestAnimationFrame(tick);
+      }
+
+      // Start once endcard fades in, disable the CSS animation so JS owns the ring
+      var observer = new MutationObserver(function () {
+        if (endcard.classList.contains('is-visible')) {
+          observer.disconnect();
+          ring.style.animation = 'none';
+          requestAnimationFrame(tick);
+        }
+      });
+      observer.observe(endcard, { attributes: true, attributeFilter: ['class'] });
+    }());
+  </script>
+
 </body>
 </html>
