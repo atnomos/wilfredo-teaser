@@ -191,7 +191,7 @@ button {
 }
 
 .logo-ring {
-  padding: 3px;
+  padding: 2px;
   border-radius: 50%;
   --ring-angle: 125deg;
   background: conic-gradient(
