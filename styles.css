@@ -184,34 +184,47 @@ button {
   Uses a conic-gradient to simulate a polished metallic surface —
   highlights at top-right, shadows at bottom-left.
 */
+@property --ring-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 125deg;
+}
+
 .logo-ring {
   padding: 3px;
   border-radius: 50%;
+  --ring-angle: 125deg;
   background: conic-gradient(
-    from 125deg,
-    #4a4a4a   0deg,
-    #b0b0b0  50deg,
-    #e8e8e8  85deg,
-    #ffffff 110deg,
-    #f0f0f0 135deg,
-    #c8c8c8 165deg,
-    #888888 210deg,
-    #5a5a5a 250deg,
-    #aaaaaa 295deg,
-    #4a4a4a 360deg
+    from var(--ring-angle),
+    #001500   0deg,
+    #004422  45deg,
+    #008833  80deg,
+    #00dd55 105deg,
+    #aaffcc 118deg,
+    #00ee44 135deg,
+    #007722 170deg,
+    #002e11 215deg,
+    #005522 265deg,
+    #001500 360deg
   );
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 0 28px rgba(200, 200, 200, 0.18),
+    0 0 0 1px rgba(0, 255, 80, 0.12),
+    0 0 28px rgba(0, 200, 60, 0.22),
     0 4px 20px rgba(0, 0, 0, 0.55);
   transition: box-shadow 400ms var(--ease);
+  animation: ring-glisten 5s linear infinite;
 }
 
 .logo-ring:hover {
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.14),
-    0 0 40px rgba(220, 220, 220, 0.28),
+    0 0 0 1px rgba(255, 220, 100, 0.22),
+    0 0 40px rgba(200, 150, 30, 0.38),
     0 4px 24px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes ring-glisten {
+  from { --ring-angle: 125deg; }
+  to   { --ring-angle: 485deg; }
 }
 
 /* Small variant used inside the nav bar */
@@ -309,9 +322,11 @@ button {
   pointer-events: none;
 }
 
-/* ── Logo intro: ring sweeps in, photo stays upright ── */
+/* ── Logo intro: ring sweeps in, then glistens ── */
 .logo-ring {
-  animation: ring-sweep 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  animation:
+    ring-sweep 1s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both,
+    ring-glisten 5s linear 1.15s infinite;
 }
 
 /* Counter-rotate the inner circle so the photo stays face-up */

@@ -18,7 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@200;300;400&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-KFKY64NLW1"></script>
   <script>
@@ -356,12 +356,11 @@
       }
 
 
-      // Delete display text one char at a time, then call callback
-      function deleteChars(callback) {
-        var current = display.textContent;
-        if (current.length === 0) { callback(); return; }
-        display.textContent = current.slice(0, -1);
-        timer = setTimeout(function () { deleteChars(callback); }, 55 + Math.random() * 35);
+      // Delete exactly N chars one at a time, then call callback
+      function deleteNChars(n, callback) {
+        if (n === 0) { callback(); return; }
+        display.textContent = display.textContent.slice(0, -1);
+        timer = setTimeout(function () { deleteNChars(n - 1, callback); }, 55 + Math.random() * 35);
       }
 
       // Type a decoy string then call callback
@@ -395,14 +394,14 @@
       function typeWord(wordIdx, charIdx, skipDecoy) {
         var word = WORDS[wordIdx];
 
-        // "Without permission.": type "With" first, pause, erase, then type the real word
+        // "Without permission.": type "With permi", backspace to "With", then add "out permission."
         if (wordIdx === 3 && charIdx === 0 && !skipDecoy) {
-          typeDecoy('With', 0, function () {
+          typeDecoy('With permi', 0, function () {
             timer = setTimeout(function () {
-              deleteChars(function () {
-                timer = setTimeout(function () { typeWord(wordIdx, 0, true); }, CLEAR_GAP);
+              deleteNChars(6, function () {
+                timer = setTimeout(function () { typeWord(wordIdx, 4, true); }, 140);
               });
-            }, 550);
+            }, 320);
           });
           return;
         }
@@ -419,10 +418,11 @@
         } else if (wordIdx === WORDS.length - 1) {
           farewell();
         } else {
+          var periodPause = word[word.length - 1] === '.' ? 350 : 0;
           timer = setTimeout(function () {
             display.textContent = '';
             timer = setTimeout(function () { typeWord(wordIdx + 1, 0); }, CLEAR_GAP);
-          }, HOLD);
+          }, HOLD + periodPause);
         }
       }
 
